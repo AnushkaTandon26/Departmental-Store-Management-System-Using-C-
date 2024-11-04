@@ -1,10 +1,46 @@
-#include <conio.h>
-#include <fstream>
 #include <iostream>
-#include <stdlib.h>
+#include <fstream>
 #include <string>
+#include <limits>
+#include <cstdlib>
+
+#ifdef _WIN32
+#include <conio.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
 
 using namespace std;
+
+void clearScreen() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
+}
+
+void setColor(const string& color) {
+    #ifdef _WIN32
+        system(("Color " + color).c_str());
+    #endif
+}
+
+void waitForKeyPress() {
+    #ifdef _WIN32
+        _getch();
+    #else
+        termios oldt, newt;
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+        newt.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+        getchar();
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    #endif
+}
+
 
 // Base class Store with virtual functions
 class Store {
@@ -15,6 +51,7 @@ public:
     virtual void check_item() = 0;
     virtual void update_item() = 0;
     virtual void delete_item() = 0;
+    virtual ~Store() = default;
 };
 
 // Derived class DepartmentStore that inherits from Store
@@ -31,14 +68,11 @@ public:
 // control panel
 void DepartmentStore ::control_panel()
 {
-    system("Color 0A");
-    system("cls");
-    cout << ""
-            "";
+    setColor("0A");
+    clearScreen();
     cout << "\n\n\t\t\tDepartment Store Management System";
     cout << "\n\n\t\t\t\t Control Panel\n";
-    cout << "\n**"
-            "\n";
+    cout << "\n**********************************\n";
     cout << "\n\n 1. Add New Item";
     cout << "\n 2. Display Items";
     cout << "\n 3. Check Specific Item";
@@ -50,243 +84,239 @@ void DepartmentStore ::control_panel()
 // add item
 void DepartmentStore ::add_item()
 {
-    system("cls");
-    system("Color 0A");
-    fstream file;
+clearScreen();
+    setColor("0A");
+    ofstream file(FILE_PATH, ios::app);
+    if (!file) {
+        cerr << "Error opening file: " << FILE_PATH << endl;
+        return;
+    }
+
     int no_item, Item_Id;
-    string itm_name;
-    string c_name;
+    string itm_name, c_name;
+
     cout << "\n\n\t\t\t\t Add New Item: \n";
-    cout << "----------------------------------------------"
-            "----------------------------\n";
+    cout << "----------------------------------------------\n";
     cout << " Item Code : ";
     cin >> Item_Id;
-    cout << "----------------------------------------------"
-            "----------------------------\n";
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cout << "----------------------------------------------\n";
     cout << "\n\n\t\t\t Item Name: ";
-    cin >> itm_name;
+    getline(cin, itm_name);
     cout << "\n\n Company Name: ";
-    cin >> c_name;
+    getline(cin, c_name);
     cout << "\n\n\t\t\t No. Of Item: ";
     cin >> no_item;
-    file.open("D://item.txt", ios::out | ios::app);
-    file << " " << Item_Id << " " << itm_name << " "
-         << c_name << " " << no_item << "\n";
-    cout << "=============================================="
-            "============================"
-         << endl;
+
+    file << Item_Id << " " << itm_name << " " << c_name << " " << no_item << "\n";
+    cout << "==============================================\n";
     file.close();
+    
 }
 
 // display item
 void DepartmentStore ::display_item()
 {
-    system("cls");
-    system("Color 0A");
-    fstream file;
-    int no_item, Item_code;
-    string itm_name;
-    string c_name;
-    file.open("D://item.txt", ios::in);
+    clearScreen();
+    setColor("0A");
+    ifstream file(FILE_PATH);
     if (!file) {
-        cout << "File Opening Error....";
-    } else {
-        cout << "------------------------------------------"
-                "-----------------\n";
-        cout << " Item Code        Item         "
-                "Company No. of Item\n";
-        cout << "------------------------------------------"
-                "-----------------"
-             << endl;
-        file >> Item_code >> itm_name >> c_name >> no_item;
-        while (!file.eof()) {
-            cout << " " << Item_code << "        "
-                 << itm_name << "        " << c_name
-                 << "\t        " << no_item
-                 << "\n";
-            file >> Item_code >> itm_name >> c_name >> no_item;
-        }
-        cout << "=========================================="
-                "================="
-             << endl;
-        file.close();
+        cerr << "Error opening file: " << FILE_PATH << endl;
+        return;
     }
+
+    int no_item, Item_code;
+    string itm_name, c_name;
+
+    cout << "------------------------------------------\n";
+    cout << " Item Code        Item         Company        No. of Item\n";
+    cout << "------------------------------------------\n";
+
+    while (file >> Item_code >> itm_name >> c_name >> no_item) {
+        cout << " " << Item_code << "        " << itm_name << "        " << c_name
+             << "        " << no_item << "\n";
+    }
+
+    cout << "==========================================\n";
+    file.close();
 }
 
 // check specific item
 void DepartmentStore ::check_item()
 {
-    system("cls");
-    system("Color 0A");
-    fstream file;
-    int count = 0;
-    int Item_code;
-    int no_item;
-    string itm_name, c_name;
-    cout << "\n\n\t\t\t\t Check Specific Product\n";
-    cout << "----------------------------------------------"
-            "----------------------------------\n";
-    file.open("D://item.txt", ios ::in);
+    clearScreen();
+    setColor("0A");
+    ifstream file(FILE_PATH);
     if (!file) {
-        cout << "File Opening Error....";
-    } else {
-        int It_code;
-        cout << "\n\n Item Code: ";
-        cin >> It_code;
-        cout << "\n----------------------------------------"
-                "----------------------------------\n";
-        file >> Item_code >> itm_name >> c_name >> no_item;
-        while (!file.eof()) {
-            if (It_code == Item_code) {
-                system("cls");
-                cout << "\n\n\t\t\t\tCheck Specific Product";
-                cout << "\n\n Item Code : " << Item_code;
-                cout << "\n\n\t\t\tItem Name : " << itm_name;
-                cout << "\n\n Company : " << c_name;
-                cout << "\n\n\t\t\tNo. of Item : " << no_item;
-                count++;
-                break;
-            }
-            file >> Item_code >> itm_name >> c_name >> no_item;
+        cerr << "Error opening file: " << FILE_PATH << endl;
+        return;
+    }
+
+    int Item_code, no_item, It_code;
+    string itm_name, c_name;
+    bool found = false;
+
+    cout << "\n\n\t\t\t\t Check Specific Product\n";
+    cout << "----------------------------------------------\n";
+    cout << "\n\n Item Code: ";
+    cin >> It_code;
+    cout << "\n----------------------------------------\n";
+
+    while (file >> Item_code >> itm_name >> c_name >> no_item) {
+        if (It_code == Item_code) {
+            clearScreen();
+            cout << "\n\n\t\t\t\tCheck Specific Product";
+            cout << "\n\n Item Code : " << Item_code;
+            cout << "\n\n\t\t\tItem Name : " << itm_name;
+            cout << "\n\n Company : " << c_name;
+            cout << "\n\n\t\t\tNo. of Item : " << no_item;
+            found = true;
+            break;
         }
-        file.close();
-        if (count == 0) {
-            cout << "Item Not Found....";
-        }
+    }
+
+    file.close();
+    if (!found) {
+        cout << "Item Not Found....";
     }
 }
 
 // update item
 void DepartmentStore ::update_item()
 {
-    system("cls");
-    system("Color 0A");
-    fstream file, file1;
-    int no_copy, no_co, count = 0;
-    string itm_name, b_na, a_name, a_na, newitm_idd, newitm_id;
-    cout << "\n\n\t\t\t\tUpdate Item Record\n";
-    cout << "----------------------------------------------"
-            "----------------------------\n";
-    file1.open("D://book1.txt", ios::app | ios::out);
-    file.open("D://item.txt", ios::in);
-    if (!file)
-        cout << "\n\n File Opening Error...";
-    else {
-        cout << "\n\n Item Code : ";
-        cin >> newitm_id;
-        cout << "\n----------------------------------------"
-                "----------------------------------\n";
-        file >> newitm_idd >> itm_name >> a_name >> no_copy;
-        while (!file.eof()) {
-            if (newitm_id == newitm_idd) {
-                system("cls");
-                cout << "\n\n\t\t\t\tUpdate Book Record";
-                cout << "\n\n New Item Name : ";
-                cin >> b_na;
-                cout << "\n\n\t\t\tCompany Name : ";
-                cin >> a_na;
-                cout << "\n\n No. of Items : ";
-                cin >> no_co;
-                file1 << " " << newitm_id << " " << b_na
-                      << " " << a_na << " " << no_co << "\n";
-                count++;
-            } else
-                file1 << " " << newitm_idd << " "
-                      << itm_name << " " << a_name << " "
-                      << no_copy << "\n";
-            file >> newitm_idd >> itm_name >> a_name >> no_copy;
-        }
-        if (count == 0)
-            cout << "\n\n Item Code Not Found...";
+    clearScreen();
+    setColor("0A");
+    ifstream inFile(FILE_PATH);
+    ofstream outFile("temp.txt");
+    if (!inFile || !outFile) {
+        cerr << "Error opening files" << endl;
+        return;
     }
 
-    file.close();
-    file1.close();
+    int no_copy, no_co, count = 0;
+    string itm_name, b_na, a_name, a_na, newitm_idd, newitm_id;
 
-    remove("D://item.txt");
-    rename("D://book1.txt", "D://item.txt");
+    cout << "\n\n\t\t\t\tUpdate Item Record\n";
+    cout << "----------------------------------------------\n";
+    cout << "\n\n Item Code : ";
+    cin >> newitm_id;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cout << "\n----------------------------------------\n";
+
+    while (inFile >> newitm_idd >> itm_name >> a_name >> no_copy) {
+        if (newitm_id == newitm_idd) {
+            clearScreen();
+            cout << "\n\n\t\t\t\tUpdate Item Record";
+            cout << "\n\n New Item Name : ";
+            getline(cin, b_na);
+            cout << "\n\n\t\t\tCompany Name : ";
+            getline(cin, a_na);
+            cout << "\n\n No. of Items : ";
+            cin >> no_co;
+            outFile << newitm_id << " " << b_na << " " << a_na << " " << no_co << "\n";
+            count++;
+        } else {
+            outFile << newitm_idd << " " << itm_name << " " << a_name << " " << no_copy << "\n";
+        }
+}
+inFile.close();
+    outFile.close();
+    if (count == 0) {
+        cout << "\n\n Item Code Not Found...";
+        remove("temp.txt");
+    } else {
+        remove(FILE_PATH.c_str());
+        rename("temp.txt", FILE_PATH.c_str());
+        cout << "\n\n Item Updated Successfully...";
+    }
 }
 
 // delete item
 void DepartmentStore ::delete_item()
 {
-    system("cls");
-    system("Color 0A");
-    fstream file, file1;
+    clearScreen();
+    setColor("0A");
+    ifstream inFile(FILE_PATH);
+    ofstream outFile("temp.txt");
+    if (!inFile || !outFile) {
+        cerr << "Error opening files" << endl;
+        return;
+    }
+
     int no_copy, count = 0;
     string newitm_id, newitm_idd, itm_name, a_name;
+
     cout << "\n\n\t\t\t\tDelete Item Record";
-    cout << "\n--------------------------------------------"
-            "------------------------------\n";
-    file1.open("D://book1.txt", ios::app | ios::out);
-    file.open("D://item.txt", ios::in);
-    if (!file)
-        cout << "\n\n File Opening Error...";
-    else {
-        cout << "\n\n Item Code : ";
-        cin >> newitm_id;
-        cout << "\n----------------------------------------"
-                "----------------------------------\n";
-        file >> newitm_idd >> itm_name >> a_name >> no_copy;
-        while (!file.eof()) {
-            if (newitm_id == newitm_idd) {
-                system("cls");
-                cout << "\n\n\t\t\t\tDelete Item Record";
-                cout << "\n\n One Item is Deleted Successfully...";
-                count++;
-            } else
-                file1 << " " << newitm_idd << " " << itm_name
-                      << " " << a_name << " " << no_copy << "\n";
-            file >> newitm_idd >> itm_name >> a_name >> no_copy;
+    cout << "\n--------------------------------------------\n";
+    cout << "\n\n Item Code : ";
+    cin >> newitm_id;
+    cout << "\n----------------------------------------\n";
+
+    while (inFile >> newitm_idd >> itm_name >> a_name >> no_copy) {
+        if (newitm_id != newitm_idd) {
+            outFile << newitm_idd << " " << itm_name << " " << a_name << " " << no_copy << "\n";
+        } else {
+            count++;
         }
-        if (count == 0)
-            cout << "\n\n Item Code Not Found...";
     }
-    file.close();
-    file1.close();
-    remove("D://item.txt");
-    rename("D://book1.txt", "D://item.txt");
+
+    inFile.close();
+    outFile.close();
+
+    if (count == 0) {
+        cout << "\n\n Item Code Not Found...";
+        remove("temp.txt");
+    } else {
+        remove(FILE_PATH.c_str());
+        rename("temp.txt", FILE_PATH.c_str());
+        cout << "\n\n One Item is Deleted Successfully...";
+    }
 }
 
 // main function demonstrating polymorphism
 int main()
 {
-    Store *store = new DepartmentStore();  // Base class pointer to derived class object
-p:
-    store->control_panel();
-    int choice;
-    char x;
-    cout << "\n\n Your Choice : ";
-    cin >> choice;
+    Store *store = new DepartmentStore();
 
-    switch (choice) {
-    case 1:
-        do {
-            store->add_item();
-            cout << "Do You Want To Add Another Item (y/n) : ";
-            cin >> x;
-        } while (x == 'y');
-        break;
-    case 2:
-        store->display_item();
-        break;
-    case 3:
-        store->check_item();
-        break;
-    case 4:
-        store->update_item();
-        break;
-    case 5:
-        store->delete_item();
-        break;
-    case 6:
-        exit(0);
-        break;
-    default:
-        cout << "\n\n Invalid Value....Please Try again";
+    while (true) {
+        store->control_panel();
+        int choice;
+        cout << "\n\n Your Choice : ";
+        cin >> choice;
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');  // Clear input buffer
+
+        switch (choice) {
+            case 1:
+                do {
+                    store->add_item();
+                    cout << "Do You Want To Add Another Item (y/n) : ";
+                    char response;
+                    cin >> response;
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');  // Clear input buffer
+                    if (response != 'y' && response != 'Y') {
+                        break;
+                    }
+                } while (true);
+                break;
+            case 2:
+                store->display_item();
+                break;
+            case 3:
+                store->check_item();
+                break;
+            case 4:
+                store->update_item();
+                break;
+            case 5:
+                store->delete_item();
+                break;
+            case 6:
+                delete store;
+                return 0;
+            default:
+                cout << "\n\n Invalid Value....Please Try again";
+        }
+        cout << "\nPress any key to continue...";
+        waitForKeyPress();
     }
-
-    cout << "\n";
-    getch();
-    goto p;
 }
